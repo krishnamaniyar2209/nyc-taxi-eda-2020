@@ -1,14 +1,14 @@
 # 🚕 NYC Yellow Taxi Trips — Exploratory Data Analysis (2020)
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)
-![TensorFlow](https://img.shields.io/badge/TFDV-Data%20Validation-orange?logo=tensorflow)
+![TFDV](https://img.shields.io/badge/TFDV-Data%20Validation-orange?logo=tensorflow)
 ![Pandas](https://img.shields.io/badge/Pandas-Data%20Analysis-blue)
 ![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange?logo=jupyter)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Complete-brightgreen)
 ![University](https://img.shields.io/badge/Pace%20University-CS672-blue)
 
-> Exploratory Data Analysis of NYC Yellow Taxi trip records from 2020, with COVID-19 impact analysis and TFDV-powered statistical validation — built for CS672: Introduction to Deep Learning at Pace University (Spring 2026).
+> Exploratory Data Analysis of ~9.6M NYC Yellow Taxi trip records from 2020, quantifying the COVID-19 impact with TFDV-powered statistical validation — built for CS672: Introduction to Deep Learning at Pace University (Fall 2025).
 
 ---
 
@@ -27,44 +27,30 @@
 
 ## 🔬 Overview
 
-This project performs a comprehensive EDA on NYC Yellow Taxi data from 2020 — a year dramatically impacted by the COVID-19 pandemic. The analysis uses both the **classic Pandas/NumPy approach** and **TensorFlow Data Validation (TFDV)** for statistical profiling.
+A comprehensive EDA of NYC Yellow Taxi data from 2020 — a year reshaped by COVID-19 — using both the **classic Pandas/NumPy** approach and **TensorFlow Data Validation (TFDV)** for statistical profiling and anomaly detection.
 
-- ✅ **Task 1** — Data preparation: missing values, outliers, numeric transformation
-- ✅ **Task 2** — Data type listing: numeric vs categorical
+- ✅ **Task 1** — Data preparation: filtering, outlier removal, feature engineering
+- ✅ **Task 2** — Data-type listing: numeric vs. categorical
 - ✅ **Task 3** — Classic EDA + TFDV statistics, correlations, feature importance
-- ✅ **Task 4** — COVID-19 time window analysis (March = "new normal")
-- ✅ **Extra Credit** — January vs March 2020 baseline comparison
+- ✅ **Task 4** — COVID-19 time-window analysis (March → May)
+- ✅ **Extra Credit** — January (pre-COVID) vs. March 2020 baseline
 
 ---
 
 ## 📊 Dataset
 
-**Source:** [NYC TLC Trip Record Data](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page)
+**Source:** [NYC TLC Trip Record Data](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page)
 
-| Month | Role | Trips |
+*(Trip counts below are after cleaning filters; ~9.6M trips total.)*
+
+| Month | Role | Trips (filtered) |
 |---|---|---|
-| January 2020 | Pre-COVID baseline (Extra Credit) | ~6.7M |
-| March 2020 | Training dataset | ~2,955,781 |
-| May 2020 | Evaluation dataset | ~335,709 |
+| January 2020 | Pre-COVID baseline (Extra Credit) | 6,294,833 |
+| March 2020 | Training dataset | 2,955,781 |
+| May 2020 | Evaluation dataset | 335,709 |
 
-### Features Used
-
-| Feature | Type | Description |
-|---|---|---|
-| `tpep_pickup_datetime` | Datetime | Pickup timestamp |
-| `tpep_dropoff_datetime` | Datetime | Dropoff timestamp |
-| `trip_distance` | Numeric | Distance in miles |
-| `trip_duration_min` | Numeric (engineered) | Duration in minutes |
-| `avg_mph` | Numeric (engineered) | Average speed |
-| `fare_amount` | Numeric | Base fare |
-| `total_amount` | Numeric | Total charge |
-| `tip_amount` | Numeric | Tip amount |
-| `tip_rate` | Numeric (engineered) | Tip as fraction of fare |
-| `payment_type` | Categorical | Payment method |
-| `VendorID` | Categorical | Vendor |
-| `RatecodeID` | Categorical | Rate code |
-| `PULocationID` | Categorical | Pickup zone |
-| `DOLocationID` | Categorical | Dropoff zone |
+### Engineered Features
+`trip_duration_min` (dropoff − pickup), `avg_mph` (distance ÷ duration), `tip_rate` (tip ÷ fare).
 
 ---
 
@@ -73,11 +59,12 @@ This project performs a comprehensive EDA on NYC Yellow Taxi data from 2020 — 
 nyc-taxi-eda-2020/
 │
 ├── Exploratory_Data_Analysis_of_NYC_Yellow_Taxi_Trips_(2020).ipynb
-├── prepared/
-│   ├── train_mar2020.parquet
-│   └── eval_may2020.parquet
 ├── README.md
 └── requirements.txt
+
+# Generated locally by the notebook (not committed — large parquet files):
+#   prepared/train_mar2020.parquet
+#   prepared/eval_may2020.parquet
 ```
 
 ---
@@ -85,62 +72,50 @@ nyc-taxi-eda-2020/
 ## 🔬 Methodology
 
 ### Task 1 — Data Preparation
-- Parquet files downloaded directly from NYC TLC CDN
-- Trip duration engineered: `(dropoff - pickup).total_seconds() / 60`
-- Filters applied: distance (0–150mi), duration (0–360min), fare > 0
-- Speed outliers removed (>80mph)
-- Missing values handled per column
+- Parquet files downloaded from the NYC TLC CDN
+- Engineered `trip_duration_min = (dropoff − pickup) / 60`
+- Filters: distance 0–150 mi, duration 0–360 min, fare > 0, speed ≤ 80 mph
 
-### Task 2 — Data Type Listing
-```
-Numeric    : trip_distance, trip_duration_min, avg_mph, fare_amount,
-             tip_amount, tolls_amount, total_amount, tip_rate,
-             pickup_hour, pickup_weekday, is_weekend, is_rush_hour, ...
-Categorical: VendorID, RatecodeID, payment_type,
-             PULocationID, DOLocationID
-```
+### Task 2 — Data-Type Listing
+Numeric: `trip_distance, trip_duration_min, avg_mph, fare_amount, tip_amount, tolls_amount, total_amount, tip_rate, ...`
+Categorical: `VendorID, RatecodeID, payment_type, PULocationID, DOLocationID`
 
 ### Task 3 — EDA
-**Classic approach:**
-- Distribution histograms for all key numeric features
-- Correlation heatmap (numeric features)
-- Mutual information feature importance for `trip_duration_min`
+- **Classic:** distribution histograms, correlation heatmap, mutual-information feature importance for `trip_duration_min`
+- **TFDV:** side-by-side March vs. May statistics, schema inference from March, anomaly detection on May
 
-**TFDV approach:**
-- Side-by-side statistics: March vs May
-- Schema inference from March (training)
-- Anomaly detection on May (evaluation)
-
-### Task 4 — COVID Time Window Analysis
-March 2020 = pandemic outbreak in the US → "new normal" for NYC Taxi
+### Task 4 — COVID Time-Window Analysis
+March 2020 (US outbreak) compared against May 2020 to quantify the pandemic's effect on ridership and trip characteristics.
 
 ---
 
 ## 💡 Key Findings
 
-### March vs May 2020
-
+### March vs. May 2020
 | Metric | March | May | Δ |
 |---|---|---|---|
 | **Trips** | 2,955,781 | 335,709 | **−88.6%** |
-| **Avg Distance (mi)** | 2.914 | 3.812 | +30.8% |
-| **Avg Duration (min)** | 13.139 | 11.919 | −9.3% |
+| Avg Distance (mi) | 2.914 | 3.812 | +30.8% |
+| Avg Duration (min) | 13.139 | 11.919 | −9.3% |
 | **Avg Speed (mph)** | 12.193 | 16.746 | **+37.3%** |
-| **Avg Total ($)** | 18.476 | 18.437 | −0.2% |
+| Avg Total ($) | 18.476 | 18.437 | −0.2% |
 | **Median Tip Rate** | 0.233 | 0.065 | **−72.1%** |
 
-### Jan vs March 2020 (Extra Credit)
-- January represents the pre-COVID baseline
-- March shows early pandemic impact — dramatic trip volume drop
-- Speed increased significantly as streets emptied
+> As lockdowns emptied the streets, **ridership collapsed ~89%** while **average speed jumped ~37%** (less congestion). The **72% drop in median tip rate** suggests a shift in trip and payment behavior during the pandemic.
 
-### Feature Importance (Mutual Information)
-Top predictors of `trip_duration_min`:
-1. `trip_distance`
-2. `avg_mph`
-3. `fare_amount`
-4. `pickup_hour`
-5. `is_rush_hour`
+### Jan vs. March 2020 (Extra Credit)
+January (pre-COVID) and March were nearly identical (trips 6.29M vs. 2.96M, but similar distance/speed/tip) — the dramatic change came **between March and May**, pinpointing the pandemic's onset.
+
+### Feature Importance — Mutual Information wrt `trip_duration_min`
+| Rank | Feature | MI |
+|---|---|---|
+| 1 | `avg_mph` | 0.956 |
+| 2 | `trip_distance` | 0.803 |
+| 3 | `tip_amount` | 0.689 |
+| 4 | `tip_rate` | 0.648 |
+| 5 | `tolls_amount` | 0.077 |
+
+> Note: `avg_mph` is derived from duration, so its high score is partly mechanical; `trip_distance` is the strongest *independent* predictor.
 
 ---
 
@@ -152,38 +127,33 @@ pip install -r requirements.txt
 jupyter notebook "Exploratory_Data_Analysis_of_NYC_Yellow_Taxi_Trips_(2020).ipynb"
 ```
 
-### requirements.txt
-```
-pandas>=1.5.0
-numpy>=1.23.0
-matplotlib>=3.6.0
-scikit-learn>=1.1.0
-tensorflow>=2.10.0
-tensorflow-data-validation>=1.3.0
-pyarrow>=9.0.0
-jupyter>=1.0.0
-```
+---
+
+## 🚀 Usage
+1. Open the notebook in Jupyter or Google Colab
+2. The notebook downloads the TLC parquet files directly — no manual download needed
+3. Run all cells top to bottom — cleaning, EDA, TFDV validation, and the COVID comparison generate automatically
 
 ---
 
 ## 🛠️ Technologies Used
-
 | Tool | Purpose |
 |---|---|
 | Pandas / NumPy | Classic EDA |
 | Matplotlib | Visualization |
 | TFDV | Statistical validation & anomaly detection |
-| scikit-learn | Mutual information feature importance |
-| PyArrow | Parquet file reading |
+| scikit-learn | Mutual-information feature importance |
+| PyArrow | Parquet reading |
 
 ---
 
 ## 👤 Author
 
-**Krishna Maniyar**
-- 🎓 Pace University — Seidenberg School of CSIS
-- 📘 CS672: Introduction to Deep Learning | Spring 2026
-- 🔗 [GitHub](https://github.com/krishnamaniyar2209)
+**Krishna Maniyar** — Data Analyst
+- 🎓 Pace University — Seidenberg School of CSIS, MS in Data Science
+- 📘 CS672: Introduction to Deep Learning (Fall 2025)
+- 📧 krishnamaniyarkm22@gmail.com
+- 🔗 [GitHub](https://github.com/krishnamaniyar2209) · [LinkedIn](https://www.linkedin.com/in/krishnamaniyar/) · [Portfolio](https://krishnamaniyar2209.github.io/)
 
 ---
 
