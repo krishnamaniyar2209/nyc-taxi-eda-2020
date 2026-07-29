@@ -72,9 +72,11 @@ nyc-taxi-eda-2020/
 │
 ├── Exploratory_Data_Analysis_of_NYC_Yellow_Taxi_Trips_(2020).ipynb
 ├── README.md
-└── requirements.txt
+├── requirements.txt
+└── .gitignore
 
-# Generated locally by the notebook, not committed (large parquet files):
+# Generated locally by the notebook, not committed:
+#   taxi2020/yellow_tripdata_2020-{01,03,05}.parquet   # raw TLC downloads (~1 GB+)
 #   prepared/train_mar2020.parquet
 #   prepared/eval_may2020.parquet
 ```
@@ -169,10 +171,18 @@ Average fare stayed remarkably flat across all three months, within 0.7%, even a
 
 ## 🔎 Data Validation with TFDV
 
-A schema was inferred from March 2020 (the training month) and May 2020 was validated against it:
+Statistics were generated for both months, a schema was inferred from March 2020 (the training month), and May 2020 was validated against it:
 
 ```python
+mar_stats = tfdv.generate_statistics_from_dataframe(mar.sample(300_000, random_state=1))
+may_stats = tfdv.generate_statistics_from_dataframe(may.sample(300_000, random_state=1))
+
+tfdv.visualize_statistics(lhs_statistics=mar_stats, rhs_statistics=may_stats,
+                          lhs_name="March 2020", rhs_name="May 2020")
+
 schema = tfdv.infer_schema(mar_stats)
+tfdv.display_schema(schema)
+
 anomalies = tfdv.validate_statistics(statistics=may_stats, schema=schema)
 tfdv.display_anomalies(anomalies)
 ```
@@ -183,9 +193,13 @@ This is the most instructive outcome in the project. May 2020 had 88.6% fewer tr
 
 **Schema validation catches structural drift, not distributional drift.** Column types, presence, and domains were all stable between the two months, which is all TFDV's schema check examines. The distributions underneath had transformed completely. A production pipeline relying on schema validation alone would have passed May 2020 through as healthy data.
 
-Catching this class of change requires distribution-level monitoring: TFDV's own drift and skew comparators (`infer_feature_shape`, L-infinity distance thresholds on categorical features, Jensen-Shannon divergence on numeric ones), or explicit alerting on summary statistics. Schema checks are a floor, not a ceiling.
+Catching this class of change requires distribution-level monitoring: TFDV's own drift and skew comparators (L-infinity distance thresholds on categorical features, Jensen-Shannon divergence on numeric ones), or explicit alerting on summary statistics. Schema checks are a floor, not a ceiling.
 
-> **Note:** the inferred schema includes `__index_level_0__`, a pandas index artifact introduced by the parquet round-trip rather than a real feature. Calling `reset_index(drop=True)` before generating statistics removes it.
+### Two details in the inferred schema
+
+**`RatecodeID` is the only optional feature.** Every other column inferred as `required`; `RatecodeID` came back `FLOAT` / `optional` / `single`, meaning TFDV observed missing values in March. It is therefore the one column most likely to trip a future anomaly check, and the one worth watching if this pipeline were productionised.
+
+**`__index_level_0__` is not a real feature.** It is a pandas index artifact introduced by the parquet round-trip and silently promoted into the schema. Calling `reset_index(drop=True)` before generating statistics removes it. Left in place, it would become part of the contract that future data is validated against.
 
 ---
 
@@ -195,7 +209,7 @@ Catching this class of change requires distribution-level monitoring: TFDV's own
 2. **Only three months were analyzed.** January, March, and May give a coarse picture. A month-by-month series across all of 2020 would show the recovery curve, not just the collapse.
 3. **Correlation and MI were computed on March only.** Whether feature relationships held stable through the pandemic is untested, and the May behaviour shift suggests they may not have.
 4. **Tip rate is understated for cash trips.** Cash tips are not recorded in TLC data, so `tip_rate` measures card-tipping behaviour. Part of the 72% drop may reflect a shift in payment mix rather than tipping generosity alone. `payment_type` is available and this is testable.
-5. **Zone IDs were excluded from the analysis.** `PULocationID` and `DOLocationID` were skipped for cardinality reasons, but geographic shifts (Manhattan versus outer boroughs) are likely a large part of the distance and speed story.
+5. **No zone-level geographic analysis was performed.** `PULocationID` and `DOLocationID` are present in the prepared data, the correlation heatmap, and the TFDV statistics, but were excluded from the mutual-information ranking on cardinality grounds and never analysed geographically. Manhattan versus outer-borough shifts are likely a large part of the distance and speed story.
 6. **Statistics were computed on samples.** TFDV used 300,000-row samples and mutual information used 200,000 rows. Adequate for stable estimates, but not the full population.
 
 ---
@@ -212,9 +226,9 @@ jupyter notebook "Exploratory_Data_Analysis_of_NYC_Yellow_Taxi_Trips_(2020).ipyn
 
 ## 🚀 Usage
 1. Open the notebook in Jupyter or Google Colab
-2. The notebook downloads the TLC parquet files directly from the CDN, no manual download needed
+2. The notebook downloads the TLC parquet files directly from the CDN into `taxi2020/`, no manual download needed. Expect roughly 1 GB across the three months
 3. Run all cells top to bottom. Cleaning, EDA, TFDV validation, and the COVID comparison generate automatically
-4. Prepared datasets are written to `prepared/` and excluded from version control
+4. Prepared datasets are written to `prepared/`. Both directories are excluded from version control by `.gitignore`
 
 ---
 
@@ -238,7 +252,7 @@ jupyter notebook "Exploratory_Data_Analysis_of_NYC_Yellow_Taxi_Trips_(2020).ipyn
 **Krishna Maniyar**, Data Analyst
 - 🎓 Pace University, Seidenberg School of CSIS, MS in Data Science
 - 📘 CS672: Introduction to Deep Learning (Fall 2025)
-- 📧 krishnamaniyarkm22@gmail.com
+- 📧 maniyarkrishnakm22@gmail.com
 - 🔗 [GitHub](https://github.com/krishnamaniyar2209) · [LinkedIn](https://www.linkedin.com/in/krishnamaniyar/) · [Portfolio](https://krishnamaniyar2209.github.io/)
 
 ---
