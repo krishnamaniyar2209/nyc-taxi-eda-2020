@@ -13,15 +13,17 @@
 
 ## 📋 Table of Contents
 - [Overview](#-overview)
+- [Highlights](#-highlights)
+- [Demo](#-demo)
 - [Dataset](#-dataset)
 - [Project Structure](#-project-structure)
 - [Methodology](#-methodology)
 - [Key Findings](#-key-findings)
 - [Data Validation with TFDV](#-data-validation-with-tfdv)
 - [Limitations & Next Steps](#-limitations--next-steps)
-- [Installation](#-installation)
+- [Installation](#️-installation)
 - [Usage](#-usage)
-- [Technologies Used](#-technologies-used)
+- [Technologies Used](#️-technologies-used)
 - [Author](#-author)
 
 ---
@@ -35,6 +37,25 @@ A comprehensive EDA of NYC Yellow Taxi data from 2020, a year reshaped by COVID-
 - ✅ **Task 3** Classic EDA plus TFDV statistics, correlations, feature importance
 - ✅ **Task 4** COVID-19 time-window analysis (March vs. May)
 - ✅ **Extra Credit** January (pre-COVID) vs. March 2020 baseline
+
+---
+
+## ✨ Highlights
+
+- Analyzed **9.59M taxi trips** across three 2020 snapshots (January, March, May) to isolate exactly how COVID-19 changed New York City travel — and found it happened in two distinct phases, not one.
+- Ran a real anomaly-detection exercise with TensorFlow Data Validation: inferred a schema from March data and validated May against it, then showed *why the result ("no anomalies found") was misleading* — schema checks catch structural drift, not the distributional collapse that had actually occurred. Diagnosing the limits of your own tooling is a more advanced skill than running the tool.
+- Caught a subtle measurement artifact: a mutual-information ranking put `avg_mph` as the top predictor of trip duration, then explained why that result is circular (`avg_mph` is mathematically derived from duration) rather than reporting it uncritically.
+- Identified that a routine dtype check silently mislabels five ID columns (like `PULocationID`, a 265-value taxi zone code) as numeric, and explained why treating them that way would corrupt any model built on top of this data.
+
+---
+
+## 🎥 Demo
+
+*The KPI comparison bar charts (March vs. May, January vs. March) and the correlation heatmap are the most immediately legible outputs this notebook produces — including one as a preview image here would let the COVID-impact story land before anyone opens the notebook itself.*
+
+```
+![March vs May 2020 KPI comparison](docs/kpi_comparison.png)
+```
 
 ---
 
@@ -71,15 +92,15 @@ Filters are deliberately conservative, retaining 96 to 98% of raw rows. This mat
 nyc-taxi-eda-2020/
 │
 ├── Exploratory_Data_Analysis_of_NYC_Yellow_Taxi_Trips_(2020).ipynb
-├── README.md
-├── requirements.txt
-└── .gitignore
+└── README.md
 
 # Generated locally by the notebook, not committed:
 #   taxi2020/yellow_tripdata_2020-{01,03,05}.parquet   # raw TLC downloads (~1 GB+)
 #   prepared/train_mar2020.parquet
 #   prepared/eval_may2020.parquet
 ```
+
+> **Note:** this repository does not currently include a `requirements.txt` or `.gitignore`. The exact package versions the notebook was built and run against are listed in [Technologies Used](#️-technologies-used) below — see the Installation section for a one-line install command using those versions.
 
 ---
 
@@ -218,7 +239,7 @@ Catching this class of change requires distribution-level monitoring: TFDV's own
 ```bash
 git clone https://github.com/krishnamaniyar2209/nyc-taxi-eda-2020.git
 cd nyc-taxi-eda-2020
-pip install -r requirements.txt
+pip install pandas==1.5.3 numpy==1.26.4 matplotlib==3.7.5 scikit-learn==1.3.2 tensorflow==2.18.0 tensorflow-data-validation==1.14.0 pyarrow
 jupyter notebook "Exploratory_Data_Analysis_of_NYC_Yellow_Taxi_Trips_(2020).ipynb"
 ```
 
@@ -228,7 +249,7 @@ jupyter notebook "Exploratory_Data_Analysis_of_NYC_Yellow_Taxi_Trips_(2020).ipyn
 1. Open the notebook in Jupyter or Google Colab
 2. The notebook downloads the TLC parquet files directly from the CDN into `taxi2020/`, no manual download needed. Expect roughly 1 GB across the three months
 3. Run all cells top to bottom. Cleaning, EDA, TFDV validation, and the COVID comparison generate automatically
-4. Prepared datasets are written to `prepared/`. Both directories are excluded from version control by `.gitignore`
+4. Prepared datasets are written to `prepared/`
 
 ---
 
